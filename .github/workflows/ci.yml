@@ -81,6 +81,74 @@ jobs:
         echo "=== Running Service Checks ==="
         make check-services || echo "⚠️ Service checks failed, checking logs..."
         
+    - name: Test API functionality
+      run: |
+        echo "🧪 Testing API Functionality..."
+        echo ""
+        
+        # Test TTS API
+        echo "=== Testing TTS API ==="
+        curl -X POST http://localhost:9876/api/tts \
+          -H "Content-Type: application/json" \
+          -d '{"text":"Hello", "language":"en", "speaker":"male"}' \
+          --output /tmp/test.wav --silent --show-error --fail
+        if [ -f /tmp/test.wav ] && [ -s /tmp/test.wav ]; then
+          echo "✅ TTS API: Generated audio file ($(stat -f%z /tmp/test.wav 2>/dev/null || stat -c%s /tmp/test.wav) bytes)"
+        else
+          echo "❌ TTS API: Failed to generate audio"
+          exit 1
+        fi
+        echo ""
+        
+        # Test STT API (using the generated audio)
+        echo "=== Testing STT API ==="
+        STT_RESPONSE=$(curl -X POST http://localhost:10300/v1/audio/transcriptions \
+          -F "file=@/tmp/test.wav" \
+          -F "model=tiny" \
+          --silent --show-error --fail)
+        echo "STT Response: $STT_RESPONSE"
+        if echo "$STT_RESPONSE" | grep -q "text"; then
+          echo "✅ STT API: Successfully transcribed audio"
+        else
+          echo "❌ STT API: Failed to transcribe"
+          exit 1
+        fi
+        echo ""
+        
+        # Test Ollama API
+        echo "=== Testing Ollama API ==="
+        # First, pull a small model for testing
+        docker exec ollama ollama pull tinyllama:1.1b
+        sleep 5
+        
+        OLLAMA_RESPONSE=$(curl -X POST http://localhost:11434/api/generate \
+          -H "Content-Type: application/json" \
+          -d '{"model":"tinyllama:1.1b","prompt":"Say hello in one word","stream":false}' \
+          --silent --show-error --fail)
+        echo "Ollama Response: $OLLAMA_RESPONSE"
+        if echo "$OLLAMA_RESPONSE" | grep -q "response"; then
+          echo "✅ Ollama API: Successfully generated response"
+        else
+          echo "❌ Ollama API: Failed to generate response"
+          exit 1
+        fi
+        echo ""
+        
+        # Test Conversation API
+        echo "=== Testing Conversation API ==="
+        CONV_RESPONSE=$(curl -X POST http://localhost:9877/api/conversation \
+          -F "audio=@/tmp/test.wav" \
+          -F "language=en" \
+          --output /tmp/response.wav --silent --show-error --fail --write-out "%{http_code}")
+        if [ "$CONV_RESPONSE" = "200" ] && [ -f /tmp/response.wav ] && [ -s /tmp/response.wav ]; then
+          echo "✅ Conversation API: Full pipeline successful ($(stat -f%z /tmp/response.wav 2>/dev/null || stat -c%s /tmp/response.wav) bytes)"
+        else
+          echo "❌ Conversation API: Failed (HTTP $CONV_RESPONSE)"
+          exit 1
+        fi
+        echo ""
+        echo "🎉 All API tests passed!"
+        
     - name: Show logs on failure
       if: failure()
       run: |
