@@ -1,6 +1,8 @@
 services:
   xtts:
-    build: ./tts-service
+    build:
+      context: ./tts-service
+      dockerfile: Dockerfile.cpu
     container_name: xtts
     ports:
       - "${TTS_PORT}:5002"

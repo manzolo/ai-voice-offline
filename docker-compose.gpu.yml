@@ -1,6 +1,8 @@
 services:
   xtts:
-    build: ./tts-service
+    build:
+      context: ./tts-service
+      dockerfile: Dockerfile.gpu
     container_name: xtts
     ports:
       - "${TTS_PORT}:5002"
@@ -61,7 +63,7 @@ services:
           devices:
             - driver: nvidia
               count: 1
-              capabilities: [gpu]
+              capabilities: [ gpu ]
     restart: unless-stopped
 
   conversation:

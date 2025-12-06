@@ -1,0 +1,36 @@
+FROM python:3.10-slim
+
+# Install system dependencies
+# libsndfile1: for audio file reading/writing
+# ffmpeg: for audio processing
+# espeak-ng: for phonemizer
+# git: for cloning models if needed or pip installing from git
+# build-essential: for compiling some python packages
+RUN apt-get update && apt-get install -y \
+    git \
+    libsndfile1 \
+    ffmpeg \
+    espeak-ng \
+    build-essential \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+COPY requirements.txt .
+
+# Install CPU-optimized torch explicitly to reduce image size
+# We do this BEFORE installing other requirements so that dependencies
+# that need torch find it already installed.
+RUN pip install --no-cache-dir torch==2.1.2 torchaudio==2.1.2 --index-url https://download.pytorch.org/whl/cpu
+
+# Install other requirements
+# Note: Pip might warn about version conflicts if requirements.txt lists
+# specific versions that differ from what we installed, but since we used
+# the versions from requirements.txt (2.1.2), it should be fine.
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY app.py .
+
+EXPOSE 5002
+
+CMD ["python3", "app.py"]
