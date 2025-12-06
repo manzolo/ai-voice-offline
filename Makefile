@@ -1,4 +1,4 @@
-.PHONY: help setup setup-gpu build up up-gpu down restart logs status clean clean-all
+.PHONY: help setup setup-gpu build up up-gpu down restart logs status clean clean-all wizard
 .PHONY: test-ollama test-conversation pull-ollama-model check-services
 .PHONY: logs-tts logs-whisper logs-ollama logs-conversation
 .PHONY: setup-voice setup-voice-upload debug-audio
@@ -8,6 +8,7 @@ help:
 	@echo "AI Voice Offline - Conversation Service"
 	@echo ""
 	@echo "🚀 Quick Start:"
+	@echo "  make wizard         - Interactive setup wizard (Recommended)"
 	@echo "  make setup          - Initial setup (CPU mode)"
 	@echo "  make setup-gpu      - Initial setup (GPU mode)"
 	@echo ""
@@ -46,6 +47,10 @@ help:
 	@echo "  make setup-voice        - Setup voice profile for cloning (containerized)"
 	@echo "  make setup-voice-upload - Alternative: Upload pre-recorded samples"
 	@echo "  make debug-audio        - Debug audio devices (if recording fails)"
+
+# Interactive setup wizard
+wizard:
+	@./scripts/wizard.sh
 
 # Initial setup - CPU mode (default)
 setup:
