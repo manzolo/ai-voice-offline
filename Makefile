@@ -182,7 +182,7 @@ clean-all:
 	@docker compose down -v 2>/dev/null || true
 	@docker compose -f docker-compose.gpu.yml down -v 2>/dev/null || true
 	@echo "🧹 Removing all volume directories..."
-	@rm -rf tts_models whisper-cache ollama-models voice-profiles
+	@docker compose run --rm -v $(PWD):/workspace --entrypoint sh web-conversation -c "rm -rf /workspace/tts_models /workspace/whisper-cache /workspace/ollama-models /workspace/voice-profiles" 2>/dev/null || sudo rm -rf tts_models whisper-cache ollama-models voice-profiles
 	@echo "✅ Complete cleanup done"
 
 # Pull Ollama model
