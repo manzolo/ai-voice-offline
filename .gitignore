@@ -1,0 +1,27 @@
+# Docker volumes and data
+tts_models/
+whisper-cache/
+tts_output/
+tts_input/
+stc_input/
+stc_output/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+
+# Environment variables
+.env
+
+# IDEs
+.vscode/
+.idea/
+
+# Voice profiles (personal data)
+voice-profiles/*
+!voice-profiles/*/.gitkeep
+ollama-models/
+

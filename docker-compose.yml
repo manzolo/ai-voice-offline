@@ -1,0 +1,75 @@
+services:
+  xtts:
+    build: ./tts-service
+    container_name: xtts
+    ports:
+      - "${TTS_PORT}:5002"
+    volumes:
+      - ./tts_models:/root/.local/share/tts
+      - ./voice-profiles:/app/voice-profiles:ro
+    environment:
+      - COQUI_TOS_AGREED=1
+      - DEFAULT_LANGUAGE=${DEFAULT_LANGUAGE:-en}
+      - DEFAULT_SPEAKER=${DEFAULT_SPEAKER:-male}
+      - CORS_ALLOW_ORIGINS=${CORS_ALLOW_ORIGINS:-*}
+      - CORS_ALLOW_CREDENTIALS=${CORS_ALLOW_CREDENTIALS:-false}
+      - CORS_ALLOW_METHODS=${CORS_ALLOW_METHODS:-*}
+      - CORS_ALLOW_HEADERS=${CORS_ALLOW_HEADERS:-*}
+    restart: unless-stopped
+
+  faster-whisper:
+    image: fedirz/faster-whisper-server:latest-cpu
+    container_name: faster-whisper
+    ports:
+      - "${STT_PORT}:8000"
+    volumes:
+      - ./whisper-cache:/root/.cache/huggingface
+    environment:
+      - WHISPER_MODEL=${WHISPER_MODEL:-large-v3}
+      - WHISPER__INFERENCE__DEVICE=cpu
+      - ALLOW_ORIGINS=["*"]
+    restart: unless-stopped
+
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ollama
+    ports:
+      - "${OLLAMA_PORT:-11434}:11434"
+    volumes:
+      - ./ollama-models:/root/.ollama
+    environment:
+      - OLLAMA_NUM_PARALLEL=1
+      - OLLAMA_MAX_LOADED_MODELS=1
+    restart: unless-stopped
+
+  conversation:
+    build: ./conversation-service
+    container_name: conversation
+    ports:
+      - "${CONVERSATION_PORT:-9877}:5003"
+    environment:
+      - STT_URL=http://faster-whisper:8000/v1/audio/transcriptions
+      - OLLAMA_URL=http://ollama:11434
+      - TTS_URL=http://xtts:5002/api/tts
+      - OLLAMA_MODEL=${OLLAMA_MODEL:-tinyllama:1.1b}
+      - VOICE_PROFILE=${VOICE_PROFILE:-default}
+      - DEFAULT_LANGUAGE=${DEFAULT_LANGUAGE:-en}
+      - STT_TIMEOUT=${STT_TIMEOUT:-120}
+      - OLLAMA_TIMEOUT=${OLLAMA_TIMEOUT:-90}
+      - TTS_TIMEOUT=${TTS_TIMEOUT:-180}
+    depends_on:
+      - xtts
+      - faster-whisper
+      - ollama
+    restart: unless-stopped
+
+  web-conversation:
+    image: python:3.11-slim
+    container_name: ai-voice-web-conversation
+    ports:
+      - "${WEB_CONVERSATION_PORT:-8080}:8080"
+    volumes:
+      - ./web-conversation:/app
+    working_dir: /app
+    command: python -m http.server 8080
+    restart: unless-stopped

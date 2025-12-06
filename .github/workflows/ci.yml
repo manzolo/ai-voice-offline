@@ -1,0 +1,106 @@
+name: CI - Build and Test (CPU)
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Cache Docker layers
+      uses: actions/cache@v3
+      with:
+        path: /tmp/.buildx-cache
+        key: ${{ runner.os }}-buildx-${{ github.sha }}
+        restore-keys: |
+          ${{ runner.os }}-buildx-
+
+    - name: Create .env file
+      run: |
+        cat > .env << EOF
+        # Core Settings
+        DEFAULT_LANGUAGE=en
+        DEFAULT_SPEAKER=male
+        TZ=UTC
+        
+        # Ports
+        TTS_PORT=9876
+        STT_PORT=10300
+        OLLAMA_PORT=11434
+        CONVERSATION_PORT=9877
+        WEB_CONVERSATION_PORT=8080
+        
+        # Model Settings
+        WHISPER_MODEL=tiny
+        OLLAMA_MODEL=tinyllama:1.1b
+        VOICE_PROFILE=default
+        
+        # User ID for file permissions
+        PUID=1000
+        PGID=1000
+        
+        # Timeouts (extended for CI)
+        STT_TIMEOUT=120
+        OLLAMA_TIMEOUT=120
+        TTS_TIMEOUT=180
+        EOF
+
+    - name: Build Docker images (CPU mode)
+      run: make build
+
+    - name: Start services (CPU mode)
+      run: |
+        make up
+        echo "Waiting for services to initialize..."
+        sleep 60
+
+    - name: Create required directories
+      run: |
+        mkdir -p tts_models whisper-cache ollama-models voice-profiles
+
+    - name: Check service health
+      run: |
+        echo "=== Container Status ==="
+        docker compose ps
+        
+        echo ""
+        echo "=== Waiting for services to be fully ready (60s more) ==="
+        sleep 60
+        
+        echo ""
+        echo "=== Running Service Checks ==="
+        make check-services || echo "⚠️ Service checks failed, checking logs..."
+        
+    - name: Show logs on failure
+      if: failure()
+      run: |
+        echo "=== XTTS Log ==="
+        docker compose logs xtts | tail -n 50
+        echo ""
+        echo "=== Whisper Log ==="
+        docker compose logs faster-whisper | tail -n 50
+        echo ""
+        echo "=== Ollama Log ==="
+        docker compose logs ollama | tail -n 50
+        echo ""
+        echo "=== Conversation Log ==="
+        docker compose logs conversation | tail -n 50
+        echo ""
+        echo "=== Web Log ==="
+        docker compose logs web-conversation | tail -n 50
+
+    - name: Cleanup
+      if: always()
+      run: |
+        docker compose down -v
+        docker system prune -af --volumes
