@@ -1,5 +1,5 @@
 .PHONY: help setup setup-gpu build up up-gpu down restart logs status clean clean-all wizard
-.PHONY: test-ollama test-conversation pull-ollama-model check-services
+.PHONY: test-ollama test-conversation pull-ollama-model pull-ollama-llama3.2 pull-ollama-qwen2.5 check-services
 .PHONY: logs-tts logs-whisper logs-ollama logs-conversation
 .PHONY: setup-voice setup-voice-upload debug-audio
 
@@ -41,7 +41,9 @@ help:
 	@echo "  make check-services    - Check if all services are ready"
 	@echo ""
 	@echo "Ollama:"
-	@echo "  make pull-ollama-model - Download TinyLlama model"
+	@echo "  make pull-ollama-model    - Download TinyLlama model"
+	@echo "  make pull-ollama-llama3.2 - Download Llama 3.2 (1B or 3B)"
+	@echo "  make pull-ollama-qwen2.5  - Download Qwen 2.5 (3B or 7B)"
 	@echo ""
 	@echo "Voice Setup:"
 	@echo "  make setup-voice        - Setup voice profile for cloning (containerized)"
@@ -185,10 +187,42 @@ clean-all:
 	@docker compose run --rm -v $(PWD):/workspace --entrypoint sh web-conversation -c "rm -rf /workspace/tts_models /workspace/whisper-cache /workspace/ollama-models /workspace/voice-profiles" 2>/dev/null || sudo rm -rf tts_models whisper-cache ollama-models voice-profiles
 	@echo "✅ Complete cleanup done"
 
-# Pull Ollama model
+# Pull Ollama models
 pull-ollama-model:
 	@echo "📥 Pulling Ollama model (tinyllama:1.1b)..."
 	@docker exec ollama ollama pull tinyllama:1.1b
+
+pull-ollama-llama3.2:
+	@echo "Choose Llama 3.2 variant:"
+	@echo "  1) llama3.2:1b  (~1GB, fast)"
+	@echo "  2) llama3.2:3b  (~2GB, better quality)"
+	@read -p "Choice [1-2]: " choice; \
+	if [ "$$choice" = "1" ]; then \
+		echo "📥 Pulling llama3.2:1b..."; \
+		docker exec ollama ollama pull llama3.2:1b; \
+	elif [ "$$choice" = "2" ]; then \
+		echo "📥 Pulling llama3.2:3b..."; \
+		docker exec ollama ollama pull llama3.2:3b; \
+	else \
+		echo "❌ Invalid choice"; \
+		exit 1; \
+	fi
+
+pull-ollama-qwen2.5:
+	@echo "Choose Qwen 2.5 variant:"
+	@echo "  1) qwen2.5:3b   (~2GB, good multilingual)"
+	@echo "  2) qwen2.5:7b   (~4.7GB, excellent multilingual)"
+	@read -p "Choice [1-2]: " choice; \
+	if [ "$$choice" = "1" ]; then \
+		echo "📥 Pulling qwen2.5:3b..."; \
+		docker exec ollama ollama pull qwen2.5:3b; \
+	elif [ "$$choice" = "2" ]; then \
+		echo "📥 Pulling qwen2.5:7b..."; \
+		docker exec ollama ollama pull qwen2.5:7b; \
+	else \
+		echo "❌ Invalid choice"; \
+		exit 1; \
+	fi
 
 # Test Ollama API
 test-ollama:
