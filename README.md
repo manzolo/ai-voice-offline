@@ -9,15 +9,14 @@
 Have natural conversations with AI using your own voice. Complete privacy - runs entirely on your hardware with no cloud services, no API keys, no subscriptions.
 
 ---
+<img width="916" height="528" alt="immagine" src="https://github.com/user-attachments/assets/184abc8c-064b-44d8-9248-c24fce314fdc" />
+
+<img width="945" height="576" alt="immagine" src="https://github.com/user-attachments/assets/b38a8345-41fa-46c0-9245-91a1e11a8608" />
+
 
 <a href="https://www.buymeacoffee.com/manzolo">
   <img src=".github/blue-button.png" alt="Buy Me A Coffee" width="200">
 </a>
-
-<img width="1017" height="628" alt="immagine" src="https://github.com/user-attachments/assets/1c316aca-11aa-4a12-9826-525b92dfdb72" />
-
-<img width="1017" height="628" alt="immagine" src="https://github.com/user-attachments/assets/2fdb3337-6d7e-470a-901e-912de3915dd7" />
-
 
 ## ✨ Features
 
