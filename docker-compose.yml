@@ -54,6 +54,7 @@ services:
       - OLLAMA_URL=http://ollama:11434
       - TTS_URL=http://xtts:5002/api/tts
       - OLLAMA_MODEL=${OLLAMA_MODEL:-tinyllama:1.1b}
+      - OLLAMA_NUM_PREDICT=${OLLAMA_NUM_PREDICT:-0}
       - VOICE_PROFILE=${VOICE_PROFILE:-default}
       - DEFAULT_LANGUAGE=${DEFAULT_LANGUAGE:-en}
       - STT_TIMEOUT=${STT_TIMEOUT:-120}

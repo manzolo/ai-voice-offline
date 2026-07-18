@@ -44,6 +44,9 @@ DEFAULT_LANGUAGE = os.getenv("DEFAULT_LANGUAGE", "en")
 STT_TIMEOUT = float(os.getenv("STT_TIMEOUT", "120"))
 OLLAMA_TIMEOUT = float(os.getenv("OLLAMA_TIMEOUT", "90"))
 TTS_TIMEOUT = float(os.getenv("TTS_TIMEOUT", "180"))
+# Max tokens the LLM may generate (0 = unlimited). Keeping spoken replies
+# short also keeps TTS synthesis within TTS_TIMEOUT on CPU-only hosts.
+OLLAMA_NUM_PREDICT = int(os.getenv("OLLAMA_NUM_PREDICT", "0"))
 
 # System prompts (Friendly & Conversational) - Language-specific
 SYSTEM_PROMPTS = {
@@ -210,6 +213,9 @@ async def conversation(
                         "top_p": 0.9
                     }
                 }
+                if OLLAMA_NUM_PREDICT > 0:
+                    ollama_payload["options"]["num_predict"] = OLLAMA_NUM_PREDICT
+                    ollama_payload["max_tokens"] = OLLAMA_NUM_PREDICT
 
                 # Try chat completions API first (newer)
                 try:
@@ -229,6 +235,8 @@ async def conversation(
                         "prompt": f"System: {system_prompt}\n\nUser: {transcription}\n\nAssistant:",
                         "stream": False
                     }
+                    if OLLAMA_NUM_PREDICT > 0:
+                        ollama_payload_legacy["options"] = {"num_predict": OLLAMA_NUM_PREDICT}
                     ollama_response = await client.post(
                         f"{OLLAMA_URL}/api/generate",
                         json=ollama_payload_legacy

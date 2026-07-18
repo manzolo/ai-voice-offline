@@ -43,6 +43,8 @@ jobs:
         # Model Settings
         WHISPER_MODEL=tiny
         OLLAMA_MODEL=tinyllama:1.1b
+        # Short replies: keep CPU TTS synthesis well within TTS_TIMEOUT
+        OLLAMA_NUM_PREDICT=60
         VOICE_PROFILE=default
         
         # User ID for file permissions
