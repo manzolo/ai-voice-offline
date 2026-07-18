@@ -135,11 +135,20 @@ jobs:
         echo ""
         
         # Test Conversation API
+        # The conversation service can still be warming up (503) on slow CPU
+        # runners even after the individual APIs respond: retry with backoff
+        # instead of dying on curl's first --fail exit.
         echo "=== Testing Conversation API ==="
-        CONV_RESPONSE=$(curl -X POST http://localhost:9877/api/conversation \
-          -F "audio=@/tmp/test.wav" \
-          -F "language=en" \
-          --output /tmp/response.wav --silent --show-error --fail --write-out "%{http_code}")
+        CONV_RESPONSE=000
+        for attempt in 1 2 3 4; do
+          CONV_RESPONSE=$(curl -X POST http://localhost:9877/api/conversation \
+            -F "audio=@/tmp/test.wav" \
+            -F "language=en" \
+            --output /tmp/response.wav --silent --write-out "%{http_code}") || true
+          [ "$CONV_RESPONSE" = "200" ] && break
+          echo "Attempt $attempt/4: HTTP $CONV_RESPONSE — retrying in 30s..."
+          sleep 30
+        done
         if [ "$CONV_RESPONSE" = "200" ] && [ -f /tmp/response.wav ] && [ -s /tmp/response.wav ]; then
           echo "✅ Conversation API: Full pipeline successful ($(stat -f%z /tmp/response.wav 2>/dev/null || stat -c%s /tmp/response.wav) bytes)"
         else
